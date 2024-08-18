@@ -31,6 +31,7 @@ class _WeatherHomePageState extends State<WeatherHomePage> {
   final List<FlSpot> humidityData = [];
   final List<String> receivedMessages = []; // List to hold received messages
   late MqttClientManager mqttClientManager;
+  final TextEditingController humidityController = TextEditingController();
   int dataCounter = 0;
 
   @override
@@ -75,6 +76,14 @@ class _WeatherHomePageState extends State<WeatherHomePage> {
     }
   }
 
+  void _sendHumidityGoal() {
+    final String goalHumidity = humidityController.text;
+    if (goalHumidity.isNotEmpty) {
+      mqttClientManager.publish('set/humidity', goalHumidity);
+      humidityController.clear(); // Clear the input field after sending
+    }
+  }
+
   @override
   void dispose() {
     mqttClientManager.disconnect();
@@ -98,7 +107,8 @@ class _WeatherHomePageState extends State<WeatherHomePage> {
             SizedBox(height: 20),
             _buildLineChartSection(),
             SizedBox(height: 20),
-            _buildThreeDaysForecastSection(),
+            _buildHumidityForm(), // Add the form here
+
             SizedBox(height: 20),
             _buildReceivedMessagesSection(),
           ],
@@ -443,6 +453,32 @@ class _WeatherHomePageState extends State<WeatherHomePage> {
                   title: Text(receivedMessages[index]),
                 );
               },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHumidityForm() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Set Goal Humidity',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            TextField(
+              controller: humidityController,
+              decoration:
+                  InputDecoration(labelText: 'Enter desired humidity (%)'),
+              keyboardType: TextInputType.number,
+            ),
+            SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: _sendHumidityGoal,
+              child: Text('Set Humidity'),
             ),
           ],
         ),

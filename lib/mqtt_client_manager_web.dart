@@ -69,4 +69,10 @@ class MqttClientManager {
   void _onSubscribed(String topic) {
     print('Subscription confirmed for topic $topic');
   }
+
+  void publish(String topic, String message) {
+    final MqttClientPayloadBuilder builder = MqttClientPayloadBuilder();
+    builder.addString(message);
+    _client.publishMessage(topic, MqttQos.atMostOnce, builder.payload!);
+  }
 }
