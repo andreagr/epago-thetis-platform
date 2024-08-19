@@ -1,16 +1,9 @@
 import * as functions from "firebase-functions";
 
-// // Start writing functions
-// // https://firebase.google.com/docs/functions/typescript
-//
-// export const helloWorld = functions.https.onRequest((request, response) => {
-//   functions.logger.info("Hello logs!", {structuredData: true});
-//   response.send("Hello from Firebase!");
-// });
-exports.logData = functions.https.onCall((data, context) => {
+exports.logPublishedData = functions.https.onRequest((req, res) => {
     // Log the received data to the console
-    console.log('Received data:', data);
+    console.log('Received data:', req.body);
 
     // Optionally, you can return a response
-    return { message: 'Data logged successfully!' };
+    res.status(200).send({ message: 'Data logged successfully!' });
 });
