@@ -129,23 +129,26 @@ class _WeatherHomePageState extends State<WeatherHomePage> {
 
   Future<void> _connectMqtt() async {
     await mqttClientManager.connect();
-    mqttClientManager.subscribe('arduino/simple');
+    mqttClientManager.subscribe('publish/50351769a907f18');
   }
 
   void _handleMessageReceived(String message) {
-    final data = parseMessage(message);
+    final List<Map<String, dynamic>>? data = parseMessage(message);
     if (data != null) {
       setState(() {
-        for (var sensor in sensors) {
-          if (sensor.name == data['sensorId']) {
-            sensor.temperatureData
-                .add(FlSpot(dataCounter.toDouble(), data['t']));
-            sensor.humidityData.add(FlSpot(dataCounter.toDouble(), data['h']));
-            if (sensor.humidityData.length > 100) {
-              sensor.humidityData.removeAt(0);
-              sensor.temperatureData.removeAt(0);
+        for (var sensorData in data) {
+          for (var sensor in sensors) {
+            if (sensor.name == sensorData['sensorId']) {
+              sensor.temperatureData
+                  .add(FlSpot(dataCounter.toDouble(), sensorData['t']));
+              sensor.humidityData
+                  .add(FlSpot(dataCounter.toDouble(), sensorData['h']));
+              if (sensor.humidityData.length > 100) {
+                sensor.humidityData.removeAt(0);
+                sensor.temperatureData.removeAt(0);
+              }
+              break; // Exit inner loop when matching sensor is found
             }
-            break;
           }
         }
         receivedMessages.add(message);
@@ -154,14 +157,20 @@ class _WeatherHomePageState extends State<WeatherHomePage> {
     }
   }
 
-  Map<String, dynamic>? parseMessage(String message) {
+  List<Map<String, dynamic>>? parseMessage(String message) {
     try {
       final Map<String, dynamic> data = json.decode(message);
-      return {
-        'sensorId': data['sensorId'],
-        'h': data['h'].toDouble(),
-        't': data['t'].toDouble(),
-      };
+      List<Map<String, dynamic>> sensorDataList = [];
+
+      for (var key in data.keys) {
+        sensorDataList.add({
+          'sensorId': 'Donatello',
+          'h': data[key]['h'].toDouble(),
+          't': data[key]['t'].toDouble(),
+        });
+      }
+
+      return sensorDataList; // Return a list of sensor data
     } catch (e) {
       print('Error parsing message: $e');
       return null;
@@ -504,10 +513,10 @@ class _WeatherHomePageState extends State<WeatherHomePage> {
     final DateTimeRange? picked = await showDateRangePicker(
       context: context,
       firstDate: DateTime(2022),
-      lastDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 1)),
       initialDateRange: DateTimeRange(
-        start: DateTime.now().subtract(Duration(days: 7)),
-        end: DateTime.now(),
+        start: DateTime.now().subtract(const Duration(days: 7)),
+        end: DateTime.now().add(const Duration(days: 1)),
       ),
     );
 

@@ -26,7 +26,7 @@ Future<void> saveDataAsCSV(
   final directory = await getApplicationDocumentsDirectory();
   final path = directory.path;
   final file =
-      File('$path/${sensorName}_${start.toLocal()}_${end.toLocal()}_data.csv');
+      File('$path\\${sensorName}_${start.toLocal()}_${end.toLocal()}_data.csv');
   await file.writeAsString(csv);
 
   print('CSV file saved at: ${file.path}');

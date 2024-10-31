@@ -1,6 +1,9 @@
 import * as functions from "firebase-functions";
 
 const mysql = require('mysql2/promise');
+const admin = require('firebase-admin');
+
+admin.initializeApp();
 
 const INSTANCE_CONNECTION_NAME = 'epago-b4676:us-central1:mqtt-db-test';
 
@@ -18,7 +21,8 @@ const pool = mysql.createPool({
 });
 
 
-
+// TODO
+// We need to save the deviceId for each message as well as the id of the single sensor that gives the reading
 exports.writeJsonToDatabase = functions.https.onRequest(async (req, res) => {
   try {
     // Parse the JSON body
@@ -77,6 +81,38 @@ exports.getDataByDateRange = functions.https.onRequest(async (req, res) => {
   } catch (error) {
     console.error('Error querying database:', error);
     res.status(500).json({ error: 'Internal server error'});
+  }
+});
+
+exports.registerNewSensor = functions.https.onRequest(async (req, res) => {
+  // Check if the request method is POST
+  if (req.method !== 'POST') {
+       res.status(405).send('Method Not Allowed');
+  }
+  
+  // Extracting data from the request body
+  //const { deviceId, deviceOwnerId, placementId, placementNumber } = req.body;
+  const { deviceId } = req.body;
+
+  // Validate input data
+  /*if (!deviceOwnerId || !placementId || typeof placementNumber !== 'number') {
+       res.status(400).send('Invalid input data');
+  }*/
+
+  // Create a new document in the Firestore collection 'sensors'
+  const sensorData = {
+      deviceOwnerId: "ownerId",
+      placementId: "placementId", //represent the cabinet in which it is places
+      placementNumber: 1, // a number to represent the single device in case of multiple present in the same cabinet
+      creationTimestamp: Date.now() // Automatically set server timestamp
+  };
+
+  try {
+      const docRef = await admin.firestore().collection('devices').doc(deviceId).set(sensorData);
+       res.status(201).send(`Sensor data saved with ID: ${docRef.id}`);
+  } catch (error) {
+      console.error('Error saving sensor data:', error);
+       res.status(500).send('Error saving data');
   }
 });
 
