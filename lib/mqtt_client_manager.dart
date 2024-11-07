@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:mqtt_client/mqtt_client.dart';
 import 'package:mqtt_client/mqtt_server_client.dart';
 
@@ -6,10 +7,12 @@ class MqttClientManager {
   final String server;
   final String clientIdentifier;
   final Function(String) onMessageReceived;
+  final Function(String) onLog; // New logging callback
+
   late MqttServerClient _client;
 
   MqttClientManager(this.server, this.clientIdentifier,
-      {required this.onMessageReceived});
+      {required this.onMessageReceived, required this.onLog});
 
   Future<void> connect() async {
     _client = MqttServerClient.withPort(server, clientIdentifier, 8883);
@@ -19,16 +22,19 @@ class MqttClientManager {
     _client.onConnected = _onConnected;
     _client.onSubscribed = _onSubscribed;
 
+    String certPath = kDebugMode ? 'assets' : 'data';
+
     final context = SecurityContext.defaultContext;
-    context.setClientAuthorities('assets/AmazonRootCA1.pem');
-    context.useCertificateChain('assets/device.pem.crt');
-    context.usePrivateKey('assets/private.pem.key');
+    context.setClientAuthorities('$certPath/AmazonRootCA1.pem');
+    context.useCertificateChain('$certPath/device.pem.crt');
+    context.usePrivateKey('$certPath/private.pem.key');
+
     _client.securityContext = context;
 
     try {
       await _client.connect();
     } catch (e) {
-      print('Exception: $e');
+      onLog('Exception: $e');
       _client.disconnect();
     }
 
@@ -41,7 +47,11 @@ class MqttClientManager {
   }
 
   void subscribe(String topic) {
-    _client.subscribe(topic, MqttQos.atLeastOnce);
+    try {
+      _client.subscribe(topic, MqttQos.atLeastOnce);
+    } catch (e) {
+      print("error in subscribing " + e.toString());
+    }
   }
 
   void disconnect() {
@@ -49,15 +59,15 @@ class MqttClientManager {
   }
 
   void _onDisconnected() {
-    print('Disconnected');
+    onLog('Disconnected');
   }
 
   void _onConnected() {
-    print('Connected');
+    onLog('Connected');
   }
 
   void _onSubscribed(String topic) {
-    print('Subscribed to $topic');
+    onLog('Subscribed to $topic');
   }
 
   void publish(String topic, String message) {

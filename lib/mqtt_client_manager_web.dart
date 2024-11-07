@@ -13,9 +13,10 @@ class MqttClientManager {
       {required this.onMessageReceived});
 
   Future<void> connect() async {
-    final wsUrl = 'wss://$server:443';
+    final wsUrl = 'wss://$server';
 
-    _client = MqttBrowserClient.withPort(wsUrl, clientIdentifier, 443);
+    _client = MqttBrowserClient.withPort(wsUrl, clientIdentifier, 443,
+        maxConnectionAttempts: 5);
     _client.logging(on: true);
     _client.keepAlivePeriod = 20;
     _client.onDisconnected = _onDisconnected;

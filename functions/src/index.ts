@@ -30,7 +30,7 @@ exports.writeJsonToDatabase = functions.https.onRequest(async (req, res) => {
 
     const sensor1Data = jsonData.sensor1;
     const sensor2Data = jsonData.sensor2;
-    jsonData.topic = "test/topic"
+    jsonData.topic = ""
 
     // Obtain the current Unix timestamp
     //const timestamp = Date..toLocaleString(); // Unix timestamp in seconds
@@ -40,12 +40,12 @@ exports.writeJsonToDatabase = functions.https.onRequest(async (req, res) => {
     const connection = await pool.getConnection();
 
     // Insert data for sensor 1
-    await connection.query('INSERT INTO sensor_data (sensor_name, temperature, humidity, topic, timestamp) VALUES (?,?,?,?,?)',
-      ['sensor1', sensor1Data.t, sensor1Data.h, jsonData.topic, datetime]);
+    await connection.query('INSERT INTO sensor_data (deviceId, sensor_name, temperature, humidity, topic, timestamp) VALUES (?,?,?,?,?,?)',
+      [jsonData.deviceId,'sensor1', sensor1Data.t, sensor1Data.h, jsonData.topic, datetime]);
 
     // Insert data for sensor 2
-    await connection.query('INSERT INTO sensor_data (sensor_name, temperature, humidity, topic, timestamp) VALUES (?,?,?,?,?)',
-      ['sensor2', sensor2Data.t, sensor2Data.h, jsonData.topic, datetime]);
+    await connection.query('INSERT INTO sensor_data (deviceId, sensor_name, temperature, humidity, topic, timestamp) VALUES (?,?,?,?,?,?)',
+      [jsonData.deviceId, 'sensor2', sensor2Data.t, sensor2Data.h, jsonData.topic, datetime]);
 
     connection.release();
 

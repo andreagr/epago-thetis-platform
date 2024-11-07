@@ -1,13 +1,23 @@
+//import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:get_ip_address/get_ip_address.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'mqtt_client_manager.dart'
     if (dart.library.html) 'mqtt_client_manager_web.dart';
 import 'functions.dart' if (dart.library.html) 'functions_web.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+//import 'package:firebase_core/firebase_core.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase
+  //await Firebase.initializeApp();
+  //FirebaseFirestore.instance.settings = const Settings(
+  //  persistenceEnabled: true,
+  //);
   runApp(MyApp());
 }
 
@@ -95,9 +105,16 @@ class WeatherHomePage extends StatefulWidget {
 
 class _WeatherHomePageState extends State<WeatherHomePage> {
   final List<String> receivedMessages = [];
+  final List<String> logs = [];
   late MqttClientManager mqttClientManager;
   int dataCounter = 0;
   bool loading = false;
+  String ipAddress = '';
+
+  Map<String, String> idsMap = {
+    '50351763a606718': 'Donatello',
+    '5035176927f6618': 'Girl with Flower',
+  };
 
   List<Sensor> sensors = [
     Sensor(
@@ -114,6 +131,20 @@ class _WeatherHomePageState extends State<WeatherHomePage> {
       temperatureData: [],
       humidityData: [],
     ),
+    Sensor(
+      name: 'Lady with an Ermine',
+      imageUrl:
+          'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ed/Dama_z_gronostajem.jpg/800px-Dama_z_gronostajem.jpg',
+      temperatureData: [],
+      humidityData: [],
+    ),
+    Sensor(
+      name: 'Birth of Venus - Botticelli',
+      imageUrl:
+          'https://upload.wikimedia.org/wikipedia/commons/thumb/6/61/El_nacimiento_de_Venus%2C_por_Sandro_Botticelli.jpg/1280px-El_nacimiento_de_Venus%2C_por_Sandro_Botticelli.jpg',
+      temperatureData: [],
+      humidityData: [],
+    ),
   ];
 
   @override
@@ -121,18 +152,48 @@ class _WeatherHomePageState extends State<WeatherHomePage> {
     super.initState();
     mqttClientManager = MqttClientManager(
       'a36s11e5lf5q7h-ats.iot.us-east-1.amazonaws.com',
-      'dashboard',
+      ipAddress!,
       onMessageReceived: _handleMessageReceived,
+      onLog: (log) {
+        // Capture logs from MQTT manager
+        setState(() {
+          logs.add(log); // Add log to the list
+        });
+      },
     );
     _connectMqtt();
   }
 
+  Future<void> _getIp() async {
+    try {
+      /// Initialize Ip Address
+      IpAddress _ipAddress = IpAddress(type: RequestType.json);
+
+      /// Get the IpAddress based on requestType.
+      dynamic data = await _ipAddress.getIpAddress();
+      print(data.toString());
+      setState(() {
+        ipAddress = data['ip'].toString();
+      });
+    } on IpAddressException catch (exception) {
+      /// Handle the exception.
+      print(exception.message);
+    }
+  }
+
   Future<void> _connectMqtt() async {
-    await mqttClientManager.connect();
-    mqttClientManager.subscribe('publish/50351769a907f18');
+    await _getIp();
+
+    try {
+      await mqttClientManager.connect();
+      mqttClientManager.subscribe('publish/+');
+    } catch (e) {
+      showAboutDialog(context: context, children: [Text(e.toString())]);
+    }
   }
 
   void _handleMessageReceived(String message) {
+    print(message);
     final List<Map<String, dynamic>>? data = parseMessage(message);
     if (data != null) {
       setState(() {
@@ -162,13 +223,35 @@ class _WeatherHomePageState extends State<WeatherHomePage> {
       final Map<String, dynamic> data = json.decode(message);
       List<Map<String, dynamic>> sensorDataList = [];
 
-      for (var key in data.keys) {
+      /*for (var key in data.keys) {
+        if (key == 'deviceId') {
+          continue;
+        }
         sensorDataList.add({
-          'sensorId': 'Donatello',
+          'deviceId': data['deviceId'],
+          'sensorId': data['deviceId'] == '5035176927f6618'
+              ? 'Donatello'
+              : 'Girl with Flower',
           'h': data[key]['h'].toDouble(),
           't': data[key]['t'].toDouble(),
         });
+      }*/
+
+      String sensorId = 'Lady with an Ermine';
+      if (data.containsKey('deviceId')) {
+        sensorId = idsMap[data['deviceId']]!;
       }
+
+      sensorDataList.add({
+        'deviceId': data['deviceId'],
+        'sensorId': sensorId,
+        'h': (data['sensor1']['h'].toDouble() +
+                data['sensor2']['h'].toDouble()) /
+            2,
+        't': (data['sensor1']['t'].toDouble() +
+                data['sensor2']['t'].toDouble()) /
+            2,
+      });
 
       return sensorDataList; // Return a list of sensor data
     } catch (e) {
@@ -213,11 +296,12 @@ class _WeatherHomePageState extends State<WeatherHomePage> {
                   //SizedBox(height: 20),
                   //_buildTodayHighlightsSection(),
                   SizedBox(height: 20),
-                  _buildLineChartSection(),
+                  _buildLineChartSection([sensors[0], sensors[1]]),
                   SizedBox(height: 20),
+                  _buildLineChartSection([sensors[2], sensors[3]]),
                   //_buildHumiditySetters(),
                   //SizedBox(height: 20),
-                  //_buildReceivedMessagesSection(),
+                  _buildReceivedMessagesSection(),
                 ],
               ),
             ),
@@ -309,7 +393,7 @@ class _WeatherHomePageState extends State<WeatherHomePage> {
     );
   }
 
-  Widget _buildLineChartSection() {
+  Widget _buildLineChartSection(List<Sensor> sensors) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -388,12 +472,14 @@ class _WeatherHomePageState extends State<WeatherHomePage> {
                       borderData: FlBorderData(show: true),
                       lineBarsData: [
                         LineChartBarData(
+                          show: sensor.temperatureData.isNotEmpty,
                           spots: sensor.temperatureData,
                           color: Color.fromARGB(255, 164, 50, 50),
                           barWidth: 2,
                           belowBarData: BarAreaData(show: false),
                         ),
                         LineChartBarData(
+                          show: sensor.humidityData.isNotEmpty,
                           spots: sensor.humidityData,
                           color: const Color.fromARGB(255, 20, 89, 146),
                           barWidth: 2,
@@ -496,10 +582,10 @@ class _WeatherHomePageState extends State<WeatherHomePage> {
             ListView.builder(
               shrinkWrap: true,
               physics: NeverScrollableScrollPhysics(),
-              itemCount: receivedMessages.length,
+              itemCount: logs.length,
               itemBuilder: (context, index) {
                 return ListTile(
-                  title: Text(receivedMessages[index]),
+                  title: Text(logs[index]),
                 );
               },
             ),
