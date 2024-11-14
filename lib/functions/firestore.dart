@@ -1,17 +1,19 @@
-/*import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firedart/firestore/firestore.dart';
+import 'package:firedart/firestore/models.dart';
 import 'package:thethis_platform/classes/device.dart';
 
 Future<List<Device>> fetchDevices() async {
   List<Device> devices = [];
 
   // Reference to the Firestore collection
-  CollectionReference deviceCollection =
-      FirebaseFirestore.instance.collection('devices');
+  //CollectionReference deviceCollection =
+  //   Firestore.instance.collection('devices');
 
   // Fetch documents from the collection
-  QuerySnapshot querySnapshot = await deviceCollection.get();
+  var map = await Firestore.instance.collection("devices").get();
 
-  for (var doc in querySnapshot.docs) {
+  print(map);
+  /*for (var doc in querySnapshot.docs) {
     // Assuming each device has two sensors
     List<Sensor> sensors = [
       Sensor(id: 'sensor_001', temperatureData: [], humidityData: []),
@@ -30,8 +32,7 @@ Future<List<Device>> fetchDevices() async {
     );
 
     devices.add(device);
-  }
+  }*/
 
   return devices;
 }
-*/

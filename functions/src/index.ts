@@ -116,3 +116,32 @@ exports.registerNewSensor = functions.https.onRequest(async (req, res) => {
   }
 });
 
+exports.loginUser = functions.https.onCall(async (data, context) => {
+  const { email, password } = data;
+
+  if (!email || !password) {
+      throw new functions.https.HttpsError('invalid-argument', 'The function must be called with two arguments "email" and "password".');
+  }
+
+  try {
+      // Use Firebase Admin SDK to verify the user's credentials
+      const userRecord = await admin.auth().getUserByEmail(email);
+      
+      // Here we would typically check the password against a database or authentication service
+      // However, Firebase Admin SDK does not support password verification directly.
+      // You would need to implement a custom authentication method or use client-side auth.
+
+      // For demonstration purposes, we will assume the password check is done on the client-side.
+      // If successful, return user information.
+      return { uid: userRecord.uid, email: userRecord.email };
+  } catch (error) {
+      if (error === 'auth/user-not-found') {
+          throw new functions.https.HttpsError('not-found', 'No user found for this email.');
+      } else if (error === 'auth/invalid-email') {
+          throw new functions.https.HttpsError('invalid-argument', 'The provided email is not valid.');
+      } else {
+  
+          throw new functions.https.HttpsError('internal', 'check logs');
+      }
+  }
+});

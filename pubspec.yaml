@@ -42,8 +42,10 @@ dependencies:
   csv: ^5.0.1
   google_fonts: ^6.2.1
   get_ip_address: ^0.0.7
+  firedart: ^0.9.8
   #cloud_firestore: ^5.4.4
-  #firebase_core: ^3.6.0
+  #firebase_core: ^3.7.0
+  #firebase_auth: ^5.3.2
 
 
 

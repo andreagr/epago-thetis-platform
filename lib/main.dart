@@ -1,14 +1,17 @@
-//import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:get_ip_address/get_ip_address.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:thethis_platform/functions/firestore.dart';
 import 'mqtt_client_manager.dart'
     if (dart.library.html) 'mqtt_client_manager_web.dart';
 import 'functions.dart' if (dart.library.html) 'functions_web.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-//import 'package:firebase_core/firebase_core.dart';
+import 'package:firedart/firedart.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,7 +19,7 @@ Future<void> main() async {
   // Initialize Firebase
   //await Firebase.initializeApp();
   //FirebaseFirestore.instance.settings = const Settings(
-  //  persistenceEnabled: true,
+  // persistenceEnabled: true,
   //);
   runApp(MyApp());
 }
@@ -150,6 +153,8 @@ class _WeatherHomePageState extends State<WeatherHomePage> {
   @override
   void initState() {
     super.initState();
+    Firestore.initialize('epago-b4676');
+    fetchDevices();
     mqttClientManager = MqttClientManager(
       'a36s11e5lf5q7h-ats.iot.us-east-1.amazonaws.com',
       ipAddress!,
@@ -607,13 +612,12 @@ class _WeatherHomePageState extends State<WeatherHomePage> {
     );
 
     if (picked != null) {
-      // Here you would typically fetch data for the selected date range
       print(
           'Selected date range for $sensorName: ${picked.start} to ${picked.end}');
       setState(() {
         loading = true;
       });
-      await _getDataByDateRange(sensorName, picked.start, picked.end);
+      await _getDataByDateRange(context, sensorName, picked.start, picked.end);
       setState(() {
         loading = false;
       });
@@ -634,12 +638,12 @@ Future<void> _selectDateRange(BuildContext context, String sensorName) async {
 
   if (picked != null) {
     // Call the Firebase function to get data for the selected date range
-    await _getDataByDateRange(sensorName, picked.start, picked.end);
+    await _getDataByDateRange(context, sensorName, picked.start, picked.end);
   }
 }
 
-Future<void> _getDataByDateRange(
-    String sensorName, DateTime start, DateTime end) async {
+Future<void> _getDataByDateRange(BuildContext context, String sensorName,
+    DateTime start, DateTime end) async {
   try {
     // Convert dates to ISO 8601 format
     String startDate = start.toIso8601String();
@@ -654,9 +658,45 @@ Future<void> _getDataByDateRange(
       final data = json.decode(response.body);
       //print(data);
 
-      await saveDataAsCSV(data['data'], sensorName, start, end);
+      String savedPath =
+          await saveDataAsCSV(data['data'], sensorName, start, end);
+
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text('File saved successfully'),
+            content: Text(savedPath),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop(); // Close the dialog
+                },
+                child: Text('OK'),
+              ),
+            ],
+          );
+        },
+      );
     } else {
       print('Failed to fetch data: ${response.statusCode}');
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text('Error'),
+            content: Text('Failed to fetch data: ${response.statusCode}'),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop(); // Close the dialog
+                },
+                child: Text('OK'),
+              ),
+            ],
+          );
+        },
+      );
     }
   } catch (e) {
     print('Error fetching data: $e');
