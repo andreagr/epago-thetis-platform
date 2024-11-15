@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:get_ip_address/get_ip_address.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:window_manager/window_manager.dart';
 import 'package:thethis_platform/functions/firestore.dart';
 import 'mqtt_client_manager.dart'
     if (dart.library.html) 'mqtt_client_manager_web.dart';
@@ -16,6 +16,10 @@ import 'package:firedart/firedart.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  await windowManager.ensureInitialized();
+
+  // Set the window title
+  windowManager.setTitle("Epago Cloud Monitoring Platform");
   // Initialize Firebase
   //await Firebase.initializeApp();
   //FirebaseFirestore.instance.settings = const Settings(
@@ -34,6 +38,7 @@ class MyApp extends StatelessWidget {
         textTheme: GoogleFonts.figtreeTextTheme(
           Theme.of(context).textTheme,
         ),
+        scaffoldBackgroundColor: Colors.white,
         appBarTheme: AppBarTheme(
           backgroundColor: Color(0xFF012463), // Main color for AppBar
           foregroundColor: Colors.white, // Text color for AppBar
@@ -198,7 +203,6 @@ class _WeatherHomePageState extends State<WeatherHomePage> {
   }
 
   void _handleMessageReceived(String message) {
-    print(message);
     final List<Map<String, dynamic>>? data = parseMessage(message);
     if (data != null) {
       setState(() {
@@ -283,7 +287,7 @@ class _WeatherHomePageState extends State<WeatherHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Thetis - Cloud Monitoring Platform'),
+        title: Text('Epago Cloud Monitoring Platform'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -318,6 +322,7 @@ class _WeatherHomePageState extends State<WeatherHomePage> {
 
   Widget _buildCurrentWeatherSection() {
     return Card(
+      color: Colors.white,
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Row(
@@ -365,41 +370,9 @@ class _WeatherHomePageState extends State<WeatherHomePage> {
     );
   }
 
-  Widget _buildTodayHighlightsSection() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _buildHighlightItem('Precipitation', '2%'),
-            _buildHighlightItem('Humidity', '87%'),
-            _buildHighlightItem('Wind', '0 km/h'),
-            _buildHighlightItem('Sunrise & Sunset', '6:18 am / 7:27 pm'),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHighlightItem(String label, String value) {
-    return Column(
-      children: [
-        Text(
-          label,
-          style: TextStyle(fontSize: 14, color: Colors.grey),
-        ),
-        SizedBox(height: 5),
-        Text(
-          value,
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-        ),
-      ],
-    );
-  }
-
   Widget _buildLineChartSection(List<Sensor> sensors) {
     return Card(
+      color: Colors.white,
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Row(
@@ -575,13 +548,14 @@ class _WeatherHomePageState extends State<WeatherHomePage> {
 
   Widget _buildReceivedMessagesSection() {
     return Card(
+      color: Colors.white,
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Received Messages',
+              'MQTT Log',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             ListView.builder(
@@ -617,28 +591,20 @@ class _WeatherHomePageState extends State<WeatherHomePage> {
       setState(() {
         loading = true;
       });
-      await _getDataByDateRange(context, sensorName, picked.start, picked.end);
+      if (picked.end.difference(picked.start).inDays > 2) {
+        // Show an error message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('You can only select a range of up to 2 days.')),
+        );
+      } else {
+        await _getDataByDateRange(
+            context, sensorName, picked.start, picked.end);
+      }
       setState(() {
         loading = false;
       });
     }
-  }
-}
-
-Future<void> _selectDateRange(BuildContext context, String sensorName) async {
-  final DateTimeRange? picked = await showDateRangePicker(
-    context: context,
-    firstDate: DateTime(2022),
-    lastDate: DateTime.now(),
-    initialDateRange: DateTimeRange(
-      start: DateTime.now().subtract(Duration(days: 7)),
-      end: DateTime.now(),
-    ),
-  );
-
-  if (picked != null) {
-    // Call the Firebase function to get data for the selected date range
-    await _getDataByDateRange(context, sensorName, picked.start, picked.end);
   }
 }
 
