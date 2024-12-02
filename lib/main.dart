@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:get_ip_address/get_ip_address.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:window_manager/window_manager.dart';
 import 'package:thethis_platform/functions/firestore.dart';
 import 'mqtt_client_manager.dart'
     if (dart.library.html) 'mqtt_client_manager_web.dart';
@@ -16,10 +15,10 @@ import 'package:firedart/firedart.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await windowManager.ensureInitialized();
+  //await windowManager.ensureInitialized();
 
   // Set the window title
-  windowManager.setTitle("Epago Cloud Monitoring Platform");
+  //windowManager.setTitle("Epago Cloud Monitoring Platform");
   // Initialize Firebase
   //await Firebase.initializeApp();
   //FirebaseFirestore.instance.settings = const Settings(
@@ -120,7 +119,7 @@ class _WeatherHomePageState extends State<WeatherHomePage> {
   String ipAddress = '';
 
   Map<String, String> idsMap = {
-    '50351763a606718': 'Donatello',
+    '503533749a6d6618': 'Donatello',
     '5035176927f6618': 'Girl with Flower',
   };
 
