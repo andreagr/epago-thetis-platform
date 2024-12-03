@@ -1,8 +1,14 @@
-import 'package:firedart/firestore/firestore.dart';
-import 'package:firedart/firestore/models.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
+//import 'package:firedart/firestore/firestore.dart';
+//import 'package:firedart/firestore/models.dart';
 import 'package:thethis_platform/classes/device.dart';
+import 'package:thethis_platform/firebase_options.dart';
 
 Future<List<Device>> fetchDevices() async {
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   List<Device> devices = [];
 
   // Reference to the Firestore collection
@@ -10,7 +16,7 @@ Future<List<Device>> fetchDevices() async {
   //   Firestore.instance.collection('devices');
 
   // Fetch documents from the collection
-  var map = await Firestore.instance.collection("devices").get();
+  var map = await FirebaseFirestore.instance.collection("devices").get();
 
   print(map);
   /*for (var doc in querySnapshot.docs) {

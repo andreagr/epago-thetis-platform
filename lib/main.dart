@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:get_ip_address/get_ip_address.dart';
@@ -10,7 +11,6 @@ import 'mqtt_client_manager.dart'
 import 'functions.dart' if (dart.library.html) 'functions_web.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:firedart/firedart.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -157,7 +157,8 @@ class _WeatherHomePageState extends State<WeatherHomePage> {
   @override
   void initState() {
     super.initState();
-    Firestore.initialize('epago-b4676');
+
+    //Firestore.initialize('epago-b4676');
     fetchDevices();
     mqttClientManager = MqttClientManager(
       'a36s11e5lf5q7h-ats.iot.us-east-1.amazonaws.com',
